@@ -36,7 +36,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from kindly_web_search_mcp_server.models import WebSearchResult
-from kindly_web_search_mcp_server.search.serpbase import search_serpbase
+from kindly_web_search_mcp_server.search.serpbase import SerpbaseError, search_serpbase
 
 
 @pytest.fixture
@@ -143,6 +143,12 @@ async def test_keeps_only_entries_carrying_three_strings(configured: None) -> No
 async def test_an_empty_organic_list_returns_no_results(configured: None) -> None:
     """Report a query with no hits as an empty list, not as an error"""
     assert await run_search({"organic": []}) == []
+
+
+async def test_nonzero_json_status_raises_provider_error(configured: None) -> None:
+    """Treat a business error in an HTTP-success response as a failed search"""
+    with pytest.raises(SerpbaseError, match="SerpBase request failed: upstream error"):
+        await run_search({"status": 1502, "error": "upstream error"})
 
 
 async def test_an_organic_value_that_is_not_a_list_returns_no_results(

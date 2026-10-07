@@ -67,6 +67,14 @@ async def search_serpbase(
             raise SerpbaseError("SerpBase response was not valid JSON.") from exc
         if not isinstance(data, dict):
             raise SerpbaseError("SerpBase response was not a JSON object.")
+
+        # The official SerpBase client treats a nonzero JSON status as an API
+        # error even when the HTTP response itself is successful.
+        api_status = data.get("status")
+        if api_status not in (0, None):
+            error = data.get("error")
+            detail = error if isinstance(error, str) and error.strip() else f"status {api_status}"
+            raise SerpbaseError(f"SerpBase request failed: {detail}")
         return data
 
     if http_client is None:
